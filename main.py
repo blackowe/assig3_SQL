@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import os
 
-from flask import Flask, request, url_for
+from flask import Flask, jsonify, request, url_for
 
 import sqlalchemy
 
@@ -145,27 +145,60 @@ def post_businesses():
     # Return the response with status 201 Created
     return (response_data, 201)
 
-# Get all businesses
+# Get all businesses - has pagination implemented
 @app.route('/' + BUSINESSES, methods=['GET'])
 def get_businesses():
     with db.connect() as conn:
-        stmt = sqlalchemy.text(
-            'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses '
-            'ORDER BY business_id DESC LIMIT 3'
-            )
-        
-        # Must add offset
-        #offset = (page - 1) * per_page
+
+        # Check for filters in query - if they exist
+        query_params = request.args
+        if ('offset' in query_params):
+            offset = int(query_params['offset'])
+            limit = int(query_params['limit'])
+        else:
+            offset = 0      # default parmeters
+            limit = 3
+
+
+        """
+        # Create stmt text depending on Offset or Limit prescense
+        sql_stmt_start = 'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses ORDER BY business_id DESC'
+        if offset is not None:
+            sql_stmt = sqlalchemy.text(sql_stmt_start + ' OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY')
+        else:
+            sql_stmt = sqlalchemy.text(sql_stmt_start)
+        print(sql_stmt)
+        """
+
+        # SQL query with OFFSET and FETCH NEXT clauses for pagination
+        sql_stmt = sqlalchemy.text(
+            f'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses '
+            f'ORDER BY business_id DESC '
+            f'LIMIT {offset}, {limit}'
+        )
 
         businesses = []
-        rows = conn.execute(stmt)
+        rows = conn.execute(sql_stmt)
         # Iterate through the result
         for row in rows:
             # Turn row into a dictionary
             business = row._asdict()   # convert to dict
+            # Adding the "self" property to each business
+            business['self'] = f"http://104.198.173.141:8000/businesses/{business['business_id']}"
+            # business['self'] = f"http://104.198.173.141:8000/businesses/{business['business_id']}"
+
             businesses.append(business)
 
-        return businesses
+        # Constructing the response JSON with "entries" and "next" properties
+        response_data = {
+            "entries": businesses,
+            "next": url_for('get_businesses', offset=offset + limit, limit=limit, _external=True) if offset is not None else None
+            # "next": f"http://104.198.173.141:8000/businesses?offset={offset + limit}&limit={limit}"
+
+        }
+
+        print((response_data))
+        return (response_data)
 
 # Get ALL Businesses - DOESN"T WORK!
 @app.route('/' + BUSINESSES + '/<int:business_id>', methods=['GET'])
