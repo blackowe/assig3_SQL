@@ -49,7 +49,7 @@ def create_table_businesses(db: sqlalchemy.engine.base.Engine) -> None:
         conn.execute(
             sqlalchemy.text(
                 'CREATE TABLE IF NOT EXISTS businesses ('
-                'business_id SERIAL NOT NULL, '     
+                'id SERIAL NOT NULL, '     
                 'owner_id INTEGER NOT NULL, '
                 'name VARCHAR(255) NOT NULL, '
                 'street_address VARCHAR(255) NOT NULL, '
@@ -57,7 +57,7 @@ def create_table_businesses(db: sqlalchemy.engine.base.Engine) -> None:
                 'state CHAR(2) NOT NULL, '
                 'zip_code INTEGER NOT NULL, '
                 #'CONSTRAINT zip_code CHECK (zip_code >= 10000 AND zip_code <= 99999)' # this is to ensure zip code is 5 digits, not sure if validation required needed?
-                'PRIMARY KEY (business_id) );'
+                'PRIMARY KEY (id) );'
             )
         )
 
@@ -172,8 +172,8 @@ def get_businesses():
 
         # SQL query with OFFSET and FETCH NEXT clauses for pagination
         sql_stmt = sqlalchemy.text(
-            f'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses '
-            f'ORDER BY business_id DESC '
+            f'SELECT id, owner_id, name, street_address, city, state, zip_code FROM businesses '
+            f'ORDER BY id ASC '
             f'LIMIT {offset}, {limit}'
         )
 
@@ -183,8 +183,9 @@ def get_businesses():
         for row in rows:
             # Turn row into a dictionary
             business = row._asdict()   # convert to dict
+            
             # Adding the "self" property to each business
-            business['self'] = f"http://104.198.173.141:8000/businesses/{business['business_id']}"
+            business['self'] = url_for('get_business', business_id=business['id'], _external=True)
             # business['self'] = f"http://104.198.173.141:8000/businesses/{business['business_id']}"
 
             businesses.append(business)
@@ -206,7 +207,7 @@ def get_business(business_id):
     with db.connect() as conn:
         stmt = sqlalchemy.text(
                 # Searches with/by primary key
-                'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses WHERE business_id = :business_id'
+                'SELECT id, owner_id, name, street_address, city, state, zip_code FROM businesses WHERE id = :business_id'
             )
         # one_or_none returns at most one result or raise an exception.
         # returns None if the result has no rows.
@@ -218,7 +219,7 @@ def get_business(business_id):
             business = row._asdict()
 
             # Rename the 'business_id' key to 'id'
-            business['id'] = business.pop('business_id')
+            #business['id'] = business.pop('business_id')
 
             # Create HATEOAS 'self' property - append HATEOAS 'link' info
             business['self'] = url_for('get_business', business_id=business_id, _external=True)
@@ -236,7 +237,7 @@ def put_business(business_id):
      with db.connect() as conn:
         stmt = sqlalchemy.text(
             # Searches with/by primary key - business_id
-                'SELECT business_id, owner_id, name, street_address, city, state, zip_code FROM businesses WHERE business_id=:business_id'
+                'SELECT id, owner_id, name, street_address, city, state, zip_code FROM businesses WHERE id=:business_id'
             )
         row = conn.execute(stmt, parameters={'business_id': business_id}).one_or_none()
         if row is None:
@@ -255,7 +256,7 @@ def put_business(business_id):
             
             stmt = sqlalchemy.text(
                 # update statement
-                'UPDATE businesses SET owner_id = :owner_id, name = :name, street_address = :street_address, city = :city, state = :state, zip_code = :zip_code WHERE business_id = :business_id'
+                'UPDATE businesses SET owner_id = :owner_id, name = :name, street_address = :street_address, city = :city, state = :state, zip_code = :zip_code WHERE id = :business_id'
             )
 
             # replaces with request JSON body paramters name, etc.
@@ -281,15 +282,15 @@ def put_business(business_id):
                     'self': url_for('get_business', business_id=business_id, _external=True)}  # add self HATEOAS link
 
 # Delete a lodging
-@app.route('/' + BUSINESSES + '/<int:id>', methods=['DELETE'])
-def delete_business(id):
+@app.route('/' + BUSINESSES + '/<int:business_id>', methods=['DELETE'])
+def delete_business(business_id):
      
      with db.connect() as conn:
         stmt = sqlalchemy.text(
-                'DELETE FROM businesses WHERE business_id=:business_id'
+                'DELETE FROM businesses WHERE id=:business_id'
             )
 
-        result = conn.execute(stmt, parameters={'business_id': id}) # 'result' has a inherit 'rowcount' property due to sqlalchemy
+        result = conn.execute(stmt, parameters={'business_id': business_id}) # 'result' has a inherit 'rowcount' property due to sqlalchemy
         conn.commit()
         # result.rowcount value will be the number of rows deleted - int. type
         # For our statement, the value be 0 or 1 because lodging_id is
