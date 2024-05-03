@@ -39,7 +39,7 @@ def init_db():
     db = init_connection_pool()
 
 # create 'business' table in database if it does not already exist
-def create_table_businesses(db: sqlalchemy.engine.base.Engine) -> None:
+def create_tables(db: sqlalchemy.engine.base.Engine) -> None:
     # Using a with statement ensures that the connection is always released
     # back into the pool at the end of statement (even if an error occurs)
     with db.connect() as conn:
@@ -52,12 +52,11 @@ def create_table_businesses(db: sqlalchemy.engine.base.Engine) -> None:
                 'CREATE TABLE IF NOT EXISTS businesses ('
                 'id SERIAL NOT NULL, '     
                 'owner_id INTEGER NOT NULL, '
-                'name VARCHAR(255) NOT NULL, '
-                'street_address VARCHAR(255) NOT NULL, '
-                'city VARCHAR(255) NOT NULL, '
+                'name VARCHAR(50) NOT NULL, '
+                'street_address VARCHAR(100) NOT NULL, '
+                'city VARCHAR(50) NOT NULL, '
                 'state CHAR(2) NOT NULL, '
-                'zip_code INTEGER NOT NULL, '
-                #'CONSTRAINT zip_code CHECK (zip_code >= 10000 AND zip_code <= 99999)' # this is to ensure zip code is 5 digits, not sure if validation required needed?
+                'zip_code INTEGER NOT NULL CHECK (zip_code >= 10000 AND zip_code <= 99999), '
                 'PRIMARY KEY (id) );'
             )
         )
@@ -573,10 +572,6 @@ def get_review_by_user(user_id):
         # returns list of each business dict 
         reviews_by_user = [row._asdict() for row in rows]
 
-        # check if None found 
-        #if not businesses:
-        #    return {"Error": "No user found for this owner"}, 404
-
         # add HATEOAS 'self' link to each review entry 
         for rev in reviews_by_user:
             rev['business'] = url_for('get_business', business_id=rev['business_id'], _external=True)
@@ -586,5 +581,5 @@ def get_review_by_user(user_id):
 
 if __name__ == '__main__':
     init_db()
-    create_table_businesses(db)
+    create_tables(db)
     app.run(host='0.0.0.0', port=8080, debug=True)
