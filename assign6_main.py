@@ -466,36 +466,8 @@ def get_course_by_id(course_id):
     }
     return jsonify(response), 200
 
-
-    
-# --------- ADDED - Update Course -----
-@app.route('/' + COURSES + '/<int:course_id>/', methods=['PATCH'])
-def update_course_by_id(course_id):
-    
-    # 401 error handle
-    try:
-        payload = verify_jwt(request)
-    except AuthError as error:
-        return jsonify({"Error": "Unauthorized"}), 401
-        
-    # 403 eror handle - check admin role
-     if payload.get('sub')!= ADMIN_SUB:
-        return jsonify({"Error": "You don't have permission on this resource"}), 403
-    
-    # 403 error handle - check course exists
-    course_key = client.key(COURSES,course_id)
-    db_course = client.get(key = course_key)     
-    if not db_course:
-        return jsonify({"Error": "Course does not exist"}), 404
-    
-    # verify instructor id
-    content = request.get_json()
-    if 'instructor_id' in content:
-        if content['instructor_id'] != db_course.get('instructor_id'):
-            return jsonify({"Error": "Mismatch instructor_id"}), 400
-        
-    # UPDATE using body properties provided....
-# --------- ADDED - Update Course -----
+# UPDATE using body properties provided...
+# --------- NOT SURE IF WORKS - Update Course -----
 @app.route('/' + COURSES + '/<int:course_id>/', methods=['PATCH'])
 def update_course_by_id(course_id):
     
@@ -580,9 +552,41 @@ def update_enrollment(course_id):
     if db_course.get('instuctor_id') != payload.get('id'):
         return jsonify({"Error": "You don't have permission on this resource"}), 403
         
-    # CHECK BODY FOR ADD/REMOVE PROPERTIES
+    # TODO: CHECK BODY FOR ADD/REMOVE PROPERTIES
+    # 409 error handle - verify 'add' & 'remove' props.
+    if 'add' not in content or 'remove' not in content:
+        return jsonify({"Error": "Missing Add or Remove property"}), 409
+    
+    # Verify no common values between 'add' & 'remove'
+    duplicates = list(set(content.get('add')) & set(content.get('remove')))
+    if duplicates:    # list is not empty, 409 error
+        return jsonify({"Error": "Missing Add or Remove property"}), 409
     
 
+# -------------------- GET enrollment of course -------------
+@app.route('/' + COURSES + '/<int:course_id>/students', methods=['GET'])
+def get_enrollment_for_course(course_id):
+    # 401 error handle - verify jwt, compare with 
+    try:
+        payload = verify_jwt(request)
+    except AuthError as error:
+        return jsonify({"Error": "Unauthorized"}), 401
+        
+    # 403 error handle - check course exists
+    course_key = client.key(COURSES,course_id)
+    db_course = client.get(key = course_key)     
+    if not db_course:
+        return jsonify({"Error": "Course does not exist"}), 404
+        
+    # 403 eror handle - check admin role 
+    if payload.get('sub')!= ADMIN_SUB:
+        return jsonify({"Error": "You don't have permission on this resource"}), 403
+        
+    # 403 error handle - check instructor id
+    if db_course.get('instuctor_id') != payload.get('id'):
+        return jsonify({"Error": "You don't have permission on this resource"}), 403
+        
+    #TODO: Get enrollment 
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
