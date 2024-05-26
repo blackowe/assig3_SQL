@@ -555,12 +555,12 @@ def update_enrollment(course_id):
     # TODO: CHECK BODY FOR ADD/REMOVE PROPERTIES
     # 409 error handle - verify 'add' & 'remove' props.
     if 'add' not in content or 'remove' not in content:
-        return jsonify({"Error": "Missing Add or Remove property"}), 409
+        return jsonify({"Error": "Enrollment data is invalid"}), 409
     
     # Verify no common values between 'add' & 'remove'
     duplicates = list(set(content.get('add')) & set(content.get('remove')))
     if duplicates:    # list is not empty, 409 error
-        return jsonify({"Error": "Missing Add or Remove property"}), 409
+        return jsonify({"Error": "Enrollment data is invalid"}), 409
 
     # TODO: verify all values in 'add' or 'remove' are real student_ids
     # combine lists of id's in question 
