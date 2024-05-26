@@ -392,6 +392,51 @@ def delete_image(id):
 
     return '',204
 
+
+# ADDED POST Courses route:--------------------------------------------------------
+COURSES = "courses"
+
+@app.route('/' + COURSES, methods=['POST'])
+def create_course():
+    
+    # 401 error handle
+    try:
+        payload = verify_jwt(request)
+    except AuthError as error:
+        return jsonify({"Error": "Unauthorized"}), 401
+        
+    # 403 eror handle:
+     if payload.get('sub')!= ADMIN_SUB:
+        return jsonify({"Error": "You don't have permission on this resource"}), 403
+    
+    # 400 error handle 
+    # verify all required properties present
+    required_properites = ['subject', 'number', 'title', 'term', 'instructor_id']
+    missing_properties = [prop for prop in required_properties if prop not in content]
+    if missing_properties:
+        error_msg = {"Error":  "The request body is missing at least one of the required attributes"}
+        return (error_msg, 400)
+    
+    # 400 error handle - verify instructor_id is real
+    content = request.get_json()
+    instruct_id = content.get('instructor_id')
+    user_key = client.key(USERS,instructor_id)      
+    instructor = client.get(key = user_key)
+    if not db_user:
+        return jsonify({"Error": "User does not exist"}), 400
+    
+    # 
+    entity_to_be_added = datastore.Entity(key = user_key)
+    entity_to_be_updated.update({
+        'sub' : db_user['sub'],
+        'role' : db_user['role'],
+        'filename': file_obj.filename,
+        'avatar_url': avatar_url
+    })
+    
+
+
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
 
