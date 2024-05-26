@@ -561,6 +561,21 @@ def update_enrollment(course_id):
     duplicates = list(set(content.get('add')) & set(content.get('remove')))
     if duplicates:    # list is not empty, 409 error
         return jsonify({"Error": "Missing Add or Remove property"}), 409
+
+    # TODO: verify all values in 'add' or 'remove' are real student_ids
+    # combine lists of id's in question 
+    all_ids = content.get('add') + content.get('remove')
+    
+    # Query all students
+    query = client.query(kind=USERS)
+    query.add_filter('student', '=', role) # gets all students
+    students = list(query.fetch())   # may need to filter just UIDs elimiate 'sub' + 'role' properties.
+
+    # find uid which are not in 1 list 
+    invalid_uids = list(set(all_ids) - set(students))
+    
+    if invalid_uids:
+        return jsonify({"Error": "Invalid ids"}), 409
     
 
 # -------------------- GET enrollment of course -------------
