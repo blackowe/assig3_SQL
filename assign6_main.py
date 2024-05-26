@@ -449,7 +449,7 @@ def get_course_by_id(course_id):
     
     # 404 error handle - course_id incorrect
     # get course from db
-    course_key = client.key(COURSES,ccourse_id)
+    course_key = client.key(COURSES,course_id)
     db_course = client.get(key = course_key)     
     if not db_course:
         return jsonify({"Error": "Course does not exist"}), 404
@@ -483,7 +483,7 @@ def update_course_by_id(course_id):
         return jsonify({"Error": "You don't have permission on this resource"}), 403
     
     # 403 error handle - check course exists
-    course_key = client.key(COURSES,ccourse_id)
+    course_key = client.key(COURSES,course_id)
     db_course = client.get(key = course_key)     
     if not db_course:
         return jsonify({"Error": "Course does not exist"}), 404
@@ -510,7 +510,7 @@ def update_course_by_id(course_id):
         return jsonify({"Error": "You don't have permission on this resource"}), 403
     
     # 403 error handle - check course exists
-    course_key = client.key(COURSES,ccourse_id)
+    course_key = client.key(COURSES,course_id)
     db_course = client.get(key = course_key)     
     if not db_course:
         return jsonify({"Error": "Course does not exist"}), 404
