@@ -465,6 +465,38 @@ def get_course_by_id(course_id):
         'self' : url_for('get_course_by_id', course_id = course_id, _external=True)
     }
     return jsonify(response), 200
+
+
+    
+# --------- ADDED - Update Course -----
+@app.route('/' + COURSES + '/<int:course_id>/', methods=['PATCH'])
+def update_course_by_id(course_id):
+    
+    # 401 error handle
+    try:
+        payload = verify_jwt(request)
+    except AuthError as error:
+        return jsonify({"Error": "Unauthorized"}), 401
+        
+    # 403 eror handle - check admin role
+     if payload.get('sub')!= ADMIN_SUB:
+        return jsonify({"Error": "You don't have permission on this resource"}), 403
+    
+    # 403 error handle - check course exists
+    course_key = client.key(COURSES,ccourse_id)
+    db_course = client.get(key = course_key)     
+    if not db_course:
+        return jsonify({"Error": "Course does not exist"}), 404
+    
+    # verify instructor id
+    content = request.get_json()
+    if 'instructor_id' in content:
+        if content['instructor_id'] != db_course.get('instructor_id'):
+            return jsonify({"Error": "Mismatch instructor_id"}), 400
+        
+    # UPDATE using body properties provided....
+    #for i in content:
+        
     
 
 
