@@ -395,7 +395,6 @@ def delete_image(id):
 
 # ADDED POST Courses route:--------------------------------------------------------
 COURSES = "courses"
-
 @app.route('/' + COURSES, methods=['POST'])
 def create_course():
     
@@ -422,17 +421,50 @@ def create_course():
     instruct_id = content.get('instructor_id')
     user_key = client.key(USERS,instructor_id)      
     instructor = client.get(key = user_key)
-    if not db_user:
+    if not instructor:
         return jsonify({"Error": "User does not exist"}), 400
     
-    # 
-    entity_to_be_added = datastore.Entity(key = user_key)
-    entity_to_be_updated.update({
-        'sub' : db_user['sub'],
-        'role' : db_user['role'],
-        'filename': file_obj.filename,
-        'avatar_url': avatar_url
+    # Create Course Entity
+    course_to_be_added = datastore.Entity(key = course)
+    course_to_be_added.update({
+        'instructor_id' : content.get('instructor_id'),
+        'subject' : content.get('subject'),
+        'number' : content.get('number'),
+        'title' : content.get('title'),
+        'term' : content.get('term'),
     })
+    client.put(course_to_be_added)
+    course_id = course_to_be_added.key.id   # generate id 
+    self_url = url_for('get_course_by_id', id = course_id, _external=True)
+    
+    # Create response:
+    course_to_be_added['id'] = course_id
+    course_to_be_added['self'] = self_url
+    return = jsonify(course_to_be_added), 200
+
+
+# --------- ADDED - GET COURSE BY ID -----
+@app.route('/' + COURSES + '/<int:course_id>/', methods=['GET'])
+def get_course_by_id(course_id):
+    
+    # 404 error handle - course_id incorrect
+    # get course from db
+    course_key = client.key(COURSES,ccourse_id)
+    db_course = client.get(key = course_key)     
+    if not db_course:
+        return jsonify({"Error": "Course does not exist"}), 404
+        
+    # Construct the response
+    response = {
+        'id' : db_course.key.id
+        'instructor_id' : db_course.get('instructor_id'),
+        'subject' : db_course.get('subject'),
+        'number' : db_course.get('number'),
+        'title' : db_course.get('title'),
+        'term' : db_course.get('term'),
+        'self' : url_for('get_course_by_id', course_id = course_id, _external=True)
+    }
+    return jsonify(response), 200
     
 
 
