@@ -570,6 +570,7 @@ def update_enrollment(course_id):
     query = client.query(kind=USERS)
     query.add_filter('student', '=', role) # gets all students
     students = list(query.fetch())   # may need to filter just UIDs elimiate 'sub' + 'role' properties.
+    #students = list(query.keys_only())
 
     # find uid which are not in 1 list 
     invalid_uids = list(set(all_ids) - set(students))
