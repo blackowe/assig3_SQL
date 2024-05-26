@@ -530,7 +530,29 @@ import requests
     return response.json(), 200
         
     
+# ---------------- DELETE a Course -------------------------------
+@app.route('/' + COURSES + '/<int:course_id>/', methods=['DELETE'])
+def delete_course(course_id):
+    # 401 error handle - verify jwt, compare with 
+    try:
+        payload = verify_jwt(request)
+        print(f"PAYLOAD = {payload}")
+    except AuthError as error:
+        return jsonify({"Error": "Unauthorized"}), 401
+    
+    # 403 error handle - check course exists
+    course_key = client.key(COURSES,course_id)
+    db_course = client.get(key = course_key)     
+    if not db_course:
+        return jsonify({"Error": "Course does not exist"}), 404
+    
+    # 403 eror handle - check admin role 
+    if payload.get('sub')!= ADMIN_SUB:
+        return jsonify({"Error": "You don't have permission on this resource"}), 403
 
+    ## 204 - delete course
+    client.delete(course_key)  
+    return '',204
 
 
 if __name__ == '__main__':
