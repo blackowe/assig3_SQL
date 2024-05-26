@@ -604,6 +604,21 @@ def get_enrollment_for_course(course_id):
         
     #TODO: Get enrollment 
 
+
+
+#==============================================
+#           HELPER FUNCTIONS 
+#-----------------------------------------------
+
+def Verify_JWT_401_Err(some_request):
+# 401 error handle - verify jwt, compare with 
+    try:
+        payload = verify_jwt(some_request)
+    except AuthError as error:
+        return jsonify({"Error": "Unauthorized"}), 401
+        
+
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
 
